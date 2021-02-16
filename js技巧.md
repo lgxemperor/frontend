@@ -151,3 +151,67 @@ console.log(clone({
   arr: [1, 2, 3]
 })) // { name: '张三', age: 23, obj: { name: '李四', age: 46 }, arr: [ 1, 2, 3 ] }
 ```
+###### 2.拦截对象
+利用Object.defineProperty拦截对象
+无法拦截数组的值
+``` javascript
+let obj = { name: '', age: '', sex: '' },
+  defaultName = ["这是姓名默认值1", "这是年龄默认值1", "这是性别默认值1"];
+Object.keys(obj).forEach(key => {
+  Object.defineProperty(obj, key, { // 拦截整个object 对象，并通过get获取值，set设置值，vue 2.x的核心就是这个来监听
+    get() {
+      return defaultName;
+    },
+    set(value) {
+      defaultName = value;
+    }
+  });
+});
+
+console.log(obj.name); // [ '这是姓名默认值1', '这是年龄默认值1', '这是性别默认值1' ]
+console.log(obj.age); // [ '这是姓名默认值1', '这是年龄默认值1', '这是性别默认值1' ]
+console.log(obj.sex); // [ '这是姓名默认值1', '这是年龄默认值1', '这是性别默认值1' ]
+obj.name = "这是改变值1";
+console.log(obj.name); // 这是改变值1
+console.log(obj.age);  // 这是改变值1
+console.log(obj.sex); // 这是改变值1
+
+let objOne = {}, defaultNameOne = "这是默认值2";
+Object.defineProperty(obj, 'name', {
+  get() {
+    return defaultNameOne;
+  },
+  set(value) {
+    defaultNameOne = value;
+  }
+});
+console.log(objOne.name); // undefined
+objOne.name = "这是改变值2";
+console.log(objOne.name); // 这是改变值2
+
+```
+利用proxy拦截对象
+
+``` javascript
+let obj = { name: '', age: '', sex: '' }
+let handler = {
+  get(target, key, receiver) {
+    console.log("get", key); 
+    return Reflect.get(target, key, receiver);
+  },
+  set(target, key, value, receiver) {
+    console.log("set", key, value); // set name 李四  // set age 24
+    return Reflect.set(target, key, value, receiver);
+  }
+};
+let proxy = new Proxy(obj, handler);
+proxy.name = "李四";
+proxy.age = 24;
+```
+defineProterty和proxy的对比：
+1.defineProterty是es5的标准,proxy是es6的标准;
+2.proxy可以监听到数组索引赋值,改变数组长度的变化;
+3.proxy是监听对象,不用深层遍历,defineProterty是监听属性;
+4.利用defineProterty实现双向数据绑定(vue2.x采用的核心)
+
+
